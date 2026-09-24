@@ -1,0 +1,41 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>VibeMeter — Create a Quiz</title><link rel="stylesheet" href="/style.css"></head>
+<body><div class="wrap">
+<header><a class="brand" href="/">Vibe<span>Meter</span> ✦</a><a class="btn ghost" href="/">Home</a></header>
+<main>
+<section class="hero"><div class="pill">💗 Dating • Friends • Crush • Couples</div><h1>Find out who<br><em>really knows you.</em></h1><p>Create your quiz, share one link, and see exactly who answered.</p></section>
+<section class="card">
+<h2>Create your quiz</h2><p class="muted">Your quiz will get its own public URL and a private dashboard URL.</p>
+<label>Your name<input id="owner" value="Sharmil"></label>
+<label>Quiz title<input id="title" value="How well do you know Sharmil?"></label>
+<div id="questions"></div>
+<button class="btn ghost" onclick="addQuestion()">＋ Add question</button>
+<button class="btn pink" onclick="createQuiz()">Create quiz & generate link →</button>
+<div id="result" class="result hidden"></div>
+</section></main></div>
+<script>
+const sample=[
+["✈️ Where would Sharmil like to go with his/her life partner?",["🏔️ Manali","🇨🇭 Switzerland","🏖️ Goa","🏔️ Leh and Ladakh","⛄ Shimla"],1],
+["😏 What would make Sharmil catch feelings fastest?",["👀 Constant eye contact","🥰 Being genuinely caring","😂 Making me laugh","💬 Deep conversations","😏 Flirting with me"],1],
+["🌙 What's Sharmil's ideal late-night plan?",["🚗 Midnight drive","🌃 Rooftop talks","🍕 Food + movies","🌊 Beach walk","📞 2 AM phone call"],0],
+["💋 What would Sharmil prefer?",["💋 A kiss","🫂 A tight hug","🤝 Holding hands","🥰 Forehead kiss","👀 Just eye contact"],3],
+["❤️ What would Sharmil value most in a relationship?",["❤️ Trust","🫶 Loyalty","💬 Communication","🔥 Chemistry","😂 Fun together"],1]
+];
+let qs=sample.map(x=>({text:x[0],options:[...x[1]],correct:x[2]}));
+function esc(s){return s.replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;")}
+function render(){questions.innerHTML=qs.map((q,i)=>`<div class="q"><div class="qtop"><b>Question ${i+1}</b><button class="mini" onclick="removeQ(${i})">Remove</button></div>
+<label>Question<input value="${esc(q.text)}" oninput="qs[${i}].text=this.value"></label>
+<div class="opts">${q.options.map((o,j)=>`<input value="${esc(o)}" oninput="qs[${i}].options[${j}]=this.value">`).join("")}</div>
+<label>Correct answer<select onchange="qs[${i}].correct=Number(this.value)">${q.options.map((o,j)=>`<option value="${j}" ${q.correct===j?"selected":""}>${esc(o)}</option>`).join("")}</select></label></div>`).join("")}
+function addQuestion(){qs.push({text:"💗 Your question?",options:["Option 1","Option 2","Option 3","Option 4","Option 5"],correct:0});render()}
+function removeQ(i){if(qs.length>1){qs.splice(i,1);render()}}
+async function createQuiz(){
+ const body={owner_name:owner.value.trim(),title:title.value.trim(),questions:qs};
+ const r=await fetch("/api/quizzes",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
+ const d=await r.json(); if(!r.ok)return alert(d.error||"Could not create quiz.");
+ const base=location.origin, share=base+d.share_url, dash=base+"/dashboard/"+d.id;
+ result.classList.remove("hidden"); result.innerHTML=`<h3>🎉 Your quiz is live</h3><p><b>Share with friends:</b></p><div class="copy">${share}</div><button class="btn pink" onclick="navigator.clipboard.writeText('${share}');this.textContent='Copied ✓'">Copy quiz link</button><a class="btn dark" href="${dash}">Open private dashboard →</a><p class="muted small">Keep the dashboard URL private. It shows names and answers.</p>`;
+}
+render();
+</script></body></html>

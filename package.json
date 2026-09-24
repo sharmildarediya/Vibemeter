@@ -1,0 +1,12 @@
+{
+  "name": "vibemeter",
+  "version": "1.0.0",
+  "private": true,
+  "description": "A real BuddyMeter-style quiz website with persistent SQLite storage.",
+  "scripts": { "start": "node server.js", "dev": "node server.js" },
+  "dependencies": {
+    "better-sqlite3": "^11.8.1",
+    "express": "^4.21.2",
+    "nanoid": "^5.0.9"
+  }
+}

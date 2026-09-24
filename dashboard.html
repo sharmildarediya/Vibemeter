@@ -1,0 +1,8 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>VibeMeter Dashboard</title><link rel="stylesheet" href="/style.css"></head>
+<body><div class="wrap"><header><a class="brand" href="/">Vibe<span>Meter</span> ✦</a><span class="pill">Private dashboard</span></header><main><section class="card"><h1 id="title">Responses</h1><p class="muted">People who completed your quiz.</p><div class="stats"><div><b id="count">0</b><span>Responses</span></div><div><b id="avg">—</b><span>Average</span></div><div><b id="top">—</b><span>Top score</span></div></div><div id="list"></div></section></main></div>
+<script>
+const id=location.pathname.split("/").pop();
+async function load(){const r=await fetch("/api/quizzes/"+id+"/responses");const d=await r.json();if(!r.ok){list.innerHTML="<h2>Dashboard not found.</h2>";return}title.textContent=d.quiz.title;count.textContent=d.stats.count;avg.textContent=d.stats.average==null?"—":d.stats.average+"%";top.textContent=d.stats.top==null?"—":d.stats.top+"%";list.innerHTML=d.responses.length?d.responses.map((x,n)=>`<article class="response"><div class="resphead"><div><h3>${esc(x.name)}</h3><small>${new Date(x.created_at).toLocaleString()}</small></div><strong>${x.score}%</strong></div><div>${x.answers.map(a=>`<div class="ans"><b>${esc(a.question)}</b><span>${esc(a.answer)}</span></div>`).join("")}</div></article>`).join(""):"<p class='muted'>No one has answered yet. Share your quiz link. 💌</p>"}
+function esc(s){return String(s).replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;")}
+load();setInterval(load,10000);
+</script></body></html>
