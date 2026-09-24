@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>VibeMeter — Create a Quiz</title>
+<style>
+:root{--pink:#ff5f9e;--ink:#24252b;--muted:#777982;--bg:#fff7fb;--line:#f1dce7}
+*{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui,-apple-system,sans-serif;color:var(--ink);background:radial-gradient(circle at 10% 0%,#ffe1ed 0,transparent 32%),radial-gradient(circle at 100% 20%,#eadfff 0,transparent 28%),var(--bg)}
+.app{max-width:1050px;margin:auto;padding:20px;min-height:100vh}nav{display:flex;justify-content:space-between;align-items:center;padding:12px 0 20px}.logo{font-size:24px;font-weight:900}.logo span{color:var(--pink)}
+.btn{border:1px solid var(--line);background:#fff;border-radius:14px;padding:12px 16px;font-weight:750;cursor:pointer}.pink{background:var(--pink);color:#fff;border-color:var(--pink)}.dark{background:var(--ink);color:#fff;border-color:var(--ink)}
+.hero{text-align:center;padding:35px 10px}.badge{display:inline-block;background:#fff;border:1px solid var(--line);padding:8px 13px;border-radius:999px}h1{font-size:clamp(42px,8vw,72px);line-height:.95;letter-spacing:-3px;margin:18px 0}.hero p,.sub{color:var(--muted);line-height:1.55}
+.panel{background:#fff;border:1px solid var(--line);border-radius:26px;padding:24px;margin:18px 0;box-shadow:0 15px 45px #e7c8d533}label{display:block;font-weight:750;margin:14px 0 7px}input{width:100%;padding:13px;border:1px solid var(--line);border-radius:13px;font:inherit}
+.question{border:1px solid var(--line);border-radius:20px;padding:17px;margin:14px 0;background:#fffafd}.qtop{display:flex;justify-content:space-between;align-items:center}.qnum{color:var(--pink);font-weight:900}.opts{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:15px}.hidden{display:none!important}
+.progress{height:7px;background:#f3e4eb;border-radius:99px;overflow:hidden;margin:18px 0}.progress i{display:block;height:100%;background:var(--pink);width:0}
+.answer{display:block;width:100%;text-align:left;margin:9px 0;padding:15px;border:1px solid var(--line);border-radius:14px;background:#fff;font:inherit;cursor:pointer}.answer.chosen{background:#ffe5f0;border-color:var(--pink)}
+.response{padding:15px 0;border-bottom:1px solid var(--line)}.chip{display:inline-block;padding:6px 9px;border-radius:99px;background:#f8e9f0;font-size:12px;font-weight:750}
+@media(max-width:700px){.opts{grid-template-columns:1fr}nav .btn:first-child{display:none}}
+</style>
+</head>
+<body>
+<div class="app">
+<nav><div class="logo">Vibe<span>Meter</span> ✦</div><div class="actions"><button class="btn" onclick="go('home')">Home</button><button class="btn dark" onclick="go('create')">Create Quiz</button></div></nav>
+
+<section id="home">
+<div class="hero">
+<span class="badge">💗 Dating • Friends • Crush • Couples</span>
+<h1>Find out who<br><span style="color:var(--pink)">really knows you.</span></h1>
+<p>Create your quiz with all 50 questions at once, or upload a VibeMeter JSON question file.</p>
+<div class="actions" style="justify-content:center"><button class="btn pink" onclick="go('create')">Create my quiz →</button><button class="btn" onclick="go('answer')">Preview quiz</button></div>
+</div>
+</section>
+
+<section id="create" class="hidden">
+<div class="panel">
+<h2>Create your VibeMeter</h2><p class="sub">Your 50 Sharmil questions are already loaded. You can also upload the JSON file we made.</p>
+<label>Your name</label><input id="owner" value="Sharmil">
+<label>Quiz title</label><input id="title" value="How well do you know Sharmil?">
+<div class="actions">
+<button class="btn" onclick="document.getElementById('file').click()">📁 Upload 50 Questions</button>
+<input id="file" type="file" accept=".json" style="display:none" onchange="loadFile(event)">
+<button class="btn" onclick="addQuestion()">＋ Add question</button>
+</div>
+<p id="fileStatus" class="sub"></p>
+<div id="builder"></div>
+<div class="actions"><button class="btn pink" onclick="saveQuiz()">Save Quiz & Create Link ✨</button><button class="btn" onclick="go('answer')">Preview</button></div>
+</div>
+<div id="share" class="panel hidden"><h2>🎉 Quiz ready</h2><p class="sub">Copy this link.</p><input id="link" readonly><div class="actions"><button class="btn dark" onclick="copyLink()">Copy Link</button><button class="btn" onclick="go('dashboard')">Responses →</button></div></div>
+</section>
+
+<section id="answer" class="hidden">
+<div class="panel">
+<h2 id="answerTitle">How well do you know Sharmil?</h2><p class="sub">Answer honestly 👀</p>
+<label>Your name</label><input id="respondent" placeholder="Enter your name">
+<div class="progress"><i id="bar"></i></div><div id="quizQuestion"></div>
+<button id="next" class="btn pink" style="width:100%">Next →</button>
+</div>
+</section>
+
+<section id="dashboard" class="hidden">
+<div class="panel"><h2>👀 Responses</h2><p class="sub">Answers recorded on this browser.</p><div id="responses"></div></div>
+</section>
+</div>
+
+<script>
+const INITIAL = [{"question": "What would Sharmil choose for a perfect date?", "options": ["Beach sunset", "Romantic dinner", "Movie night", "Long drive", "Cute café date"], "correct": null}, {"question": "What would Sharmil notice first in someone?", "options": ["Eyes", "Smile", "Voice", "Personality", "Style"], "correct": null}, {"question": "What would make Sharmil instantly blush?", "options": ["Intense eye contact", "A genuine compliment", "Holding hands", "A cute text", "Flirty teasing"], "correct": null}, {"question": "Who would Sharmil want to make the first move?", "options": ["Me", "My crush", "Whoever likes first", "Neither, just vibes", "Depends on the person"], "correct": null}, {"question": "What would Sharmil prefer?", "options": ["A kiss", "A tight hug", "Holding hands", "Forehead kiss", "Just eye contact"], "correct": null}, {"question": "Where would Sharmil take their crush at 2 AM?", "options": ["Long drive", "Rooftop", "Beach", "Late-night café", "Just chill together"], "correct": null}, {"question": "What is Sharmil’s biggest weakness?", "options": ["Beautiful eyes", "Cute smile", "Attractive voice", "Caring nature", "Flirty personality"], "correct": null}, {"question": "Who would fall in love first?", "options": ["Sharmil", "The crush", "Both together", "Nobody admits it", "It’s complicated"], "correct": null}, {"question": "What kind of relationship would Sharmil want?", "options": ["Cute & romantic", "Best friends + lovers", "Passionate", "Peaceful & mature", "Adventurous"], "correct": null}, {"question": "What would Sharmil do when they miss their crush?", "options": ["Call them", "Text them", "Check their profile", "Wait for them to text", "Go meet them"], "correct": null}, {"question": "If Sharmil’s crush sat very close, what would Sharmil do?", "options": ["Act normal", "Get nervous", "Make eye contact", "Start joking", "Start flirting"], "correct": null}, {"question": "What would Sharmil enjoy most with their partner?", "options": ["Travelling", "Movie nights", "Going on dates", "Cuddling & talking", "Parties & adventures"], "correct": null}, {"question": "Which text would make Sharmil happiest?", "options": ["“I miss you ❤️”", "“Good morning handsome 😘”", "“When are we meeting? 👀”", "“I love talking to you 🥹”", "“I have a surprise for you 😏”"], "correct": null}, {"question": "How would Sharmil react if their crush stared at them?", "options": ["Look away", "Stare back", "Smile", "Start laughing", "Pretend not to notice"], "correct": null}, {"question": "Who would be more clingy in Sharmil’s relationship?", "options": ["Sharmil", "Their partner", "Both", "Depends on the day", "Neither"], "correct": null}, {"question": "What would Sharmil choose for Valentine’s Day?", "options": ["Flowers + dinner", "Thoughtful gift", "Sunset date", "Mini trip", "Private romantic evening"], "correct": null}, {"question": "What kind of flirting would Sharmil prefer?", "options": ["Eye contact", "Flirty texts", "Teasing", "Compliments", "Subtle hints"], "correct": null}, {"question": "What would Sharmil value most in a relationship?", "options": ["Trust", "Loyalty", "Communication", "Chemistry", "Fun together"], "correct": null}, {"question": "After a fight, who would Sharmil expect to apologize first?", "options": ["Me", "My partner", "Whoever is wrong", "Neither", "Both together"], "correct": null}, {"question": "What’s Sharmil’s ideal romantic moment?", "options": ["Watching sunset together", "Midnight drive", "Cuddling in silence", "Candlelight dinner", "Watching the city from above"], "correct": null}, {"question": "What would make Sharmil catch feelings fastest?", "options": ["Constant eye contact", "Being genuinely caring", "Making me laugh", "Deep conversations", "Flirting with me"], "correct": null}, {"question": "If Sharmil gets a “I like you” text, what happens?", "options": ["Instant smile", "Panic", "Flirt back", "Say it back", "Leave them on read"], "correct": null}, {"question": "What’s Sharmil’s ideal late-night plan?", "options": ["Midnight drive", "Rooftop talks", "Food + movies", "Beach walk", "2 AM phone call"], "correct": null}, {"question": "What would Sharmil want most from a partner?", "options": ["Loyalty", "Attention", "Understanding", "Good vibes", "Chemistry"], "correct": null}, {"question": "If Sharmil’s crush walks into the room…", "options": ["Act completely normal", "Get nervous", "Keep looking at them", "Try to impress them", "Suddenly become extra funny"], "correct": null}, {"question": "Which romantic gesture would Sharmil love most?", "options": ["Surprise flowers", "Handwritten letter", "Unexpected gift", "Surprise date", "Random “I love you”"], "correct": null}, {"question": "What type of person would Sharmil be attracted to?", "options": ["Sweet & caring", "Confident", "Funny", "Intelligent", "Charming"], "correct": null}, {"question": "What would Sharmil do after a perfect date?", "options": ["Text “I had fun ❤️”", "Post a story", "Flirt some more", "Replay everything in my head", "Call my best friend"], "correct": null}, {"question": "Who would Sharmil get jealous over?", "options": ["Their best friend", "Someone texting them", "Their close friend", "Someone flirting with them", "Nobody… probably"], "correct": null}, {"question": "What would Sharmil choose for a couple trip?", "options": ["Switzerland", "Italy", "Maldives", "Paris", "Manali"], "correct": null}, {"question": "What’s Sharmil’s flirting style?", "options": ["Eye contact", "Teasing", "Flirty texts", "Compliments", "Very obvious"], "correct": null}, {"question": "What would Sharmil say after getting a cute kiss?", "options": ["“Wait… again?”", "“That was cute.”", "“That’s it?”", "Laugh nervously", "Say nothing, just smile"], "correct": null}, {"question": "What kind of chemistry would Sharmil want?", "options": ["Eye-contact chemistry", "Best-friend chemistry", "Emotional chemistry", "Physical chemistry", "All of it"], "correct": null}, {"question": "How often would Sharmil text their partner?", "options": ["All day", "Mostly at night", "Whenever something happens", "Randomly throughout the day", "Only when I miss them"], "correct": null}, {"question": "What would Sharmil do if their crush said “Come closer”?", "options": ["Get shy", "Move closer", "Make a joke", "Hold eye contact", "Immediately obey"], "correct": null}, {"question": "Which nickname would Sharmil secretly love?", "options": ["Baby", "Jaan", "Handsome", "Cutie", "Love"], "correct": null}, {"question": "What would Sharmil choose for an anniversary?", "options": ["Fancy dinner", "Romantic trip", "Meaningful gift", "Recreate first date", "Private date night"], "correct": null}, {"question": "How would Sharmil know they’re falling for someone?", "options": ["Checking their phone constantly", "Thinking about them randomly", "Getting jealous", "Wanting to see them every day", "Acting shy around them"], "correct": null}, {"question": "Which message would make Sharmil’s heart skip?", "options": ["“I miss you.”", "“Come see me.”", "“You’re mine. ❤️”", "“I can’t stop thinking about you.”", "“Wish you were here. 😏”"], "correct": null}, {"question": "What kind of affection would Sharmil prefer?", "options": ["Holding hands", "Long hugs", "Kisses", "Cuddles", "Just being close"], "correct": null}, {"question": "If Sharmil could read their crush’s mind, what would they check first?", "options": ["Their feelings for me", "What they find attractive", "Whether they miss me", "Their secret thoughts", "What they tell their friends"], "correct": null}, {"question": "Where would Sharmil want their first kiss?", "options": ["Beach", "Under the stars", "In a car", "At home", "Rooftop"], "correct": null}, {"question": "Who would be the troublemaker in Sharmil’s relationship?", "options": ["Sharmil", "Partner", "Both", "Depends on the mood", "Neither"], "correct": null}, {"question": "What would Sharmil want their partner to remember?", "options": ["Birthday", "Little details", "Important dates", "Inside jokes", "Everything about me"], "correct": null}, {"question": "What could instantly melt Sharmil?", "options": ["Eye contact", "“I’m proud of you.”", "Unexpected hug", "Forehead kiss", "Whispering something cute"], "correct": null}, {"question": "What’s more attractive to Sharmil?", "options": ["Confidence", "Intelligence", "Kindness", "Humor", "Looks"], "correct": null}, {"question": "What secret would Sharmil be most likely to hide?", "options": ["Having a crush", "Flirting with someone", "Missing someone", "Stalking their profile", "Getting jealous"], "correct": null}, {"question": "What would Sharmil’s relationship vibe be?", "options": ["Soft & cute", "Chaotic besties", "Flirty & passionate", "Calm & romantic", "Adventure couple"], "correct": null}, {"question": "If their crush suddenly held Sharmil’s hand…", "options": ["Freeze", "Hold it tighter", "Smile", "Make a joke", "Look at them silently"], "correct": null}, {"question": "What would make Sharmil think “I could marry this person”?", "options": ["Loyalty", "Understanding", "Being my best friend", "Feeling at peace with them", "Everything just feels right"], "correct": null}];
+let questions = JSON.parse(localStorage.getItem('vm_questions') || JSON.stringify(INITIAL));
+let current=0, answers=[];
+
+function esc(s){return String(s).replaceAll('&','&amp;').replaceAll('"','&quot;').replaceAll('<','&lt;').replaceAll('>','&gt;')}
+function go(id){document.querySelectorAll('section').forEach(x=>x.classList.add('hidden'));document.getElementById(id).classList.remove('hidden');if(id==='create')renderBuilder();if(id==='answer')startQuiz();if(id==='dashboard')renderDashboard();scrollTo(0,0)}
+function renderBuilder(){
+ const b=document.getElementById('builder');b.innerHTML='';
+ questions.forEach((q,i)=>{
+  const d=document.createElement('div');d.className='question';
+  d.innerHTML=`<div class="qtop"><span class="qnum">Q${i+1}</span><button class="btn" onclick="removeQ(${i})">Remove</button></div>
+  <label>Question</label><input value="${esc(q.question)}" oninput="questions[${i}].question=this.value">
+  <div class="opts">${q.options.map((o,j)=>`<input value="${esc(o)}" oninput="questions[${i}].options[${j}]=this.value">`).join('')}</div>`;
+  b.appendChild(d);
+ });
+}
+function addQuestion(){questions.push({question:'Your question?',options:['Option 1','Option 2','Option 3','Option 4','Option 5'],correct:null});renderBuilder()}
+function removeQ(i){if(questions.length>1){questions.splice(i,1);renderBuilder()}}
+function loadFile(e){
+ const f=e.target.files[0];if(!f)return;
+ const r=new FileReader();r.onload=()=>{try{const d=JSON.parse(r.result);const arr=Array.isArray(d)?d:d.questions;if(!Array.isArray(arr)||!arr.length)throw Error();
+ questions=arr.map(x=>({question:x.question||x.text||'',options:x.options||[],correct:x.correct??null})).filter(x=>x.question&&x.options.length);
+ localStorage.setItem('vm_questions',JSON.stringify(questions));document.getElementById('fileStatus').textContent='✅ Loaded '+questions.length+' questions';renderBuilder();
+ }catch(err){document.getElementById('fileStatus').textContent='❌ Invalid JSON file'}};r.readAsText(f);
+}
+function saveQuiz(){
+ localStorage.setItem('vm_questions',JSON.stringify(questions));
+ localStorage.setItem('vm_owner',document.getElementById('owner').value||'Sharmil');
+ localStorage.setItem('vm_title',document.getElementById('title').value||'How well do you know Sharmil?');
+ document.getElementById('link').value=location.href.split('#')[0]+'#quiz='+Math.random().toString(36).slice(2,8).toUpperCase();
+ document.getElementById('share').classList.remove('hidden');
+}
+function copyLink(){navigator.clipboard?.writeText(document.getElementById('link').value);alert('Link copied!')}
+function startQuiz(){
+ current=0;answers=[];document.getElementById('answerTitle').textContent=localStorage.getItem('vm_title')||'How well do you know Sharmil?';document.getElementById('respondent').value='';document.getElementById('next').classList.remove('hidden');renderQuestion();
+}
+function renderQuestion(){
+ const q=questions[current];document.getElementById('quizQuestion').innerHTML='<h3>'+esc(q.question)+'</h3>'+q.options.map((o,i)=>'<button class="answer '+(answers[current]===i?'chosen':'')+'" onclick="choose('+i+')">'+esc(o)+'</button>').join('');
+ document.getElementById('bar').style.width=((current+1)/questions.length*100)+'%';document.getElementById('next').textContent=current===questions.length-1?'Submit quiz ✨':'Next →';
+}
+function choose(i){answers[current]=i;renderQuestion()}
+document.getElementById('next').onclick=function(){
+ if(answers[current]===undefined)return alert('Choose an option first 👀');
+ if(current<questions.length-1){current++;renderQuestion();return}
+ const name=document.getElementById('respondent').value.trim()||'Anonymous';
+ const rs=JSON.parse(localStorage.getItem('vm_responses')||'[]');rs.push({name,answers:[...answers],time:new Date().toLocaleString()});
+ localStorage.setItem('vm_responses',JSON.stringify(rs));document.getElementById('quizQuestion').innerHTML='<div style="text-align:center;padding:30px"><div style="font-size:55px">💗</div><h2>Thanks, '+esc(name)+'!</h2><p class="sub">Your answers have been recorded.</p></div>';this.classList.add('hidden');
+}
+function renderDashboard(){
+ const rs=JSON.parse(localStorage.getItem('vm_responses')||'[]');document.getElementById('responses').innerHTML=rs.length?rs.slice().reverse().map(r=>'<div class="response"><b>'+esc(r.name)+'</b><br><small>'+r.time+'</small><br><span class="chip">Answers recorded</span><br><small>'+r.answers.map((a,i)=>esc(questions[i]?.options?.[a]||'—')).join(' · ')+'</small></div>').join(''):'<p class="sub">No responses yet 💌</p>';
+}
+renderBuilder();
+</script>
+</body>
+</html>
